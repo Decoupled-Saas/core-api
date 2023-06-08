@@ -1,0 +1,45 @@
+version: '3.1'
+
+services:
+  db:
+    image: postgres:14.7-alpine
+    container_name: postgres
+    hostname: db
+    ulimits:
+      nproc: 65535
+    ports:
+      - '5432:5432'
+    networks:
+      - bn
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U localhost']
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    environment:
+      POSTGRES_USER: localhost
+      POSTGRES_PASSWORD: '123456'
+
+  service:
+    image: biolerplate
+    container_name: service
+    ports:
+      - '8080:8080'
+    env_file:
+      - setup.env
+    networks:
+      - bn
+    healthcheck:
+      test:
+        ['CMD', 'curl', '-f', 'http://localhost:8080/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      db:
+        condition: service_healthy
+
+networks:
+  bn:
+    name: biolerplate-network
